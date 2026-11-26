@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-numpy
+numpy==2.4.4
 scikit-learn==1.5.2

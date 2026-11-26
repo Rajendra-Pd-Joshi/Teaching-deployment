@@ -1,8 +1,7 @@
 import pickle
-from typing import List
 
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="ML Model API")
@@ -16,8 +15,18 @@ with open("models/scaler.pkl", "rb") as f:
 
 
 class PredictRequest(BaseModel):
-    # One row of features, in the same order used during training
-    features: List[float]
+    day: float
+    month: float
+    year: float
+    Temperature: float
+    RH: float
+    Ws: float
+    Rain: float
+    FFMC: float
+    DMC: float
+    ISI: float
+    Classes: float
+    Region: float
 
 
 @app.get("/")
@@ -32,7 +41,16 @@ def health():
 
 @app.post("/predict")
 def predict(request: PredictRequest):
-    x = np.array(request.features).reshape(1, -1)
-    x_scaled = scaler.transform(x)
-    prediction = model.predict(x_scaled)
-    return {"prediction": prediction.tolist()}
+    try:
+        # Same order as the scaler's feature names
+        x = np.array([[
+            request.day, request.month, request.year,
+            request.Temperature, request.RH, request.Ws, request.Rain,
+            request.FFMC, request.DMC, request.ISI,
+            request.Classes, request.Region,
+        ]])
+        x_scaled = scaler.transform(x)
+        prediction = model.predict(x_scaled)
+        return {"prediction": prediction.tolist()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
